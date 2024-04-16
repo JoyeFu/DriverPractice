@@ -4,7 +4,7 @@
 #include <linux/fs.h>
 #include <linux/stat.h>
 #include <linux/device.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/string.h>
 #include <linux/errno.h>
 #include "test_ioctl.h"

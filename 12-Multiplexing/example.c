@@ -6,7 +6,7 @@
 #include <linux/poll.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
-#include <asm/uaccess.h>
+#include <linux/uaccess.h>
 #include <linux/string.h>
 #include <linux/errno.h>
 #include "test_ioctl.h"
@@ -43,8 +43,8 @@ static struct device_data_reg dev_data = {
 									.len = 12};
 
 /* Read timer interrupt handler. */
-static void example_read_timeout_handler(unsigned long arg) {
-	struct device_data_reg *data_p = (struct device_data_reg *)arg;
+static void example_read_timeout_handler(struct timer_list *arg) {
+	struct device_data_reg *data_p = container_of(arg, struct device_data_reg, read_timeout);
 	unsigned long flags;
 
 	printk(KERN_DEBUG "EXAMPLE: read timer timeout\n");
@@ -61,8 +61,8 @@ static void example_read_timeout_handler(unsigned long arg) {
 }
 
 /* Write timer interrupt handler. */
-static void example_write_timeout_handler(unsigned long arg) {
-	struct device_data_reg *data_p = (struct device_data_reg *)arg;
+static void example_write_timeout_handler(struct timer_list *arg) {
+	struct device_data_reg *data_p = container_of(arg, struct device_data_reg, write_timeout);
 	unsigned long flags;
 
 	printk(KERN_DEBUG "EXAMPLE: write timer timeout\n");
@@ -94,12 +94,17 @@ static int example_open(struct inode *inode, struct file *filp) {
 	spin_lock_init(&(dev_data.read_splock));
 	spin_lock_init(&(dev_data.write_splock));
 	/* initial the read / write timers. */
+#if 0
 	init_timer(&(dev_data.read_timeout));
 	init_timer(&(dev_data.write_timeout));
 	dev_data.read_timeout.function = example_read_timeout_handler;
 	dev_data.write_timeout.function = example_write_timeout_handler;
 	dev_data.read_timeout.data = (unsigned long)(&dev_data);
 	dev_data.write_timeout.data = (unsigned long)(&dev_data);
+#endif
+	timer_setup(&dev_data.read_timeout, example_read_timeout_handler, 0);
+	timer_setup(&dev_data.write_timeout, example_write_timeout_handler, 0);
+
 	mod_timer(&(dev_data.read_timeout), jiffies + 2*HZ);
 	mod_timer(&(dev_data.write_timeout), jiffies + 2*HZ);	
 	dev_data.read_flag = 0;
